@@ -35,16 +35,7 @@ where
   let scopeptr = RefCell::new(scope);
   let serializer = Serializer::new(&scopeptr);
 
-  let res = input.serialize(serializer);
-  let scope = scopeptr.into_inner();
-
-  if let Some(obj) = res.as_ref().ok().and_then(|v| v.to_object(scope)) {
-    let name = v8::String::new_from_utf8(scope, "toString".as_bytes(), v8::NewStringType::Internalized).unwrap();
-    let func = v8::Function::new(scope, default_to_string).unwrap();
-    let _ = obj.define_own_property(scope, name.into(), func.into(), PropertyAttribute::NONE);
-  }
-
-  res
+  input.serialize(serializer)
 }
 
 fn default_to_string(
@@ -241,6 +232,11 @@ impl<'a, 'b, 'c> ser::SerializeStruct for ObjectSerializer<'a, 'b, 'c> {
       &self.keys[..],
       &self.values[..],
     );
+
+    let name = v8::String::new_from_utf8(scope, "toString".as_bytes(), v8::NewStringType::Internalized).unwrap();
+    let func = v8::Function::new(scope, default_to_string).unwrap();
+    let _ = obj.define_own_property(scope, name.into(), func.into(), PropertyAttribute::NONE);
+
     Ok(obj.into())
   }
 }
