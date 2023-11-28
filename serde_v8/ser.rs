@@ -1,6 +1,7 @@
 // Copyright 2018-2023 the Deno authors. All rights reserved. MIT license.
 use serde::ser;
 use serde::ser::Serialize;
+use v8::PropertyAttribute;
 
 use std::cell::RefCell;
 use std::ops::DerefMut;
@@ -34,7 +35,25 @@ where
   let scopeptr = RefCell::new(scope);
   let serializer = Serializer::new(&scopeptr);
 
-  input.serialize(serializer)
+  let res = input.serialize(serializer);
+  let scope = scopeptr.into_inner();
+
+  if let Some(obj) = res.as_ref().ok().and_then(|v| v.to_object(scope)) {
+    let name = v8::String::new_from_utf8(scope, "toString".as_bytes(), v8::NewStringType::Internalized).unwrap();
+    let func = v8::Function::new(scope, default_to_string).unwrap();
+    let _ = obj.define_own_property(scope, name.into(), func.into(), PropertyAttribute::NONE);
+  }
+
+  res
+}
+
+fn default_to_string(
+  scope: &mut v8::HandleScope,
+  _args: v8::FunctionCallbackArguments,
+  mut rv: v8::ReturnValue,
+) { 
+  let result = v8::String::new_from_utf8(scope, "[object]".as_bytes(), v8::NewStringType::Internalized).unwrap();
+  rv.set(result.into());
 }
 
 /// Wraps other serializers into an enum tagged variant form.
