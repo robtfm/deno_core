@@ -99,6 +99,18 @@ fn generate_op2(
   op_fn.sig.generics.params.clear();
   op_fn.sig.ident = call.clone();
 
+  // create raw version
+  let mut raw_fn = func.clone();
+  let raw_ident = format_ident!("{}__raw_fn", &func.sig.ident);
+  raw_fn.sig.ident = raw_ident.clone();
+  raw_fn.attrs.clear();
+  for arg in raw_fn.sig.inputs.iter_mut() {
+    match arg {
+      FnArg::Receiver(slf) => slf.attrs.clear(),
+      FnArg::Typed(ty) => ty.attrs.clear(),
+    }
+  }
+
   // Clear inert attributes
   // TODO(mmastrac): This should limit itself to clearing ours only
   for arg in op_fn.sig.inputs.iter_mut() {
@@ -314,6 +326,9 @@ fn generate_op2(
 
       <#name <#(#generic),*>  as ::deno_core::_ops::Op>::DECL
     }
+
+    #[allow(unused, non_snake_case)]
+    #raw_fn
   })
 }
 
