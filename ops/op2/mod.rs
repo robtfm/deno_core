@@ -103,7 +103,7 @@ fn generate_op2(
   let mut raw_fn = func.clone();
   let raw_ident = format_ident!("{}__raw_fn", &func.sig.ident);
   raw_fn.sig.ident = raw_ident.clone();
-  raw_fn.attrs.clear();
+  raw_fn.attrs.retain(|attr| !is_attribute_special(attr));
   for arg in raw_fn.sig.inputs.iter_mut() {
     match arg {
       FnArg::Receiver(slf) => slf.attrs.clear(),
