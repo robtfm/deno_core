@@ -33,7 +33,7 @@ anyhow = "1"
 bencher = "0.1"
 bincode = "1"
 criterion = "0.5"
-bit-set = "0"
+bit-set = { version = "=0.5.3" }
 bit-vec = { version = "=0.6.3" }
 bytes = ">=1.6.0"
 cooked-waker = "5"
