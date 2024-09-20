@@ -1,6 +1,7 @@
 // Copyright 2018-2024 the Deno authors. All rights reserved. MIT license.
 use serde::ser;
 use serde::ser::Serialize;
+use v8::PropertyAttribute;
 
 use std::cell::RefCell;
 use std::ops::DerefMut;
@@ -194,6 +195,15 @@ impl<'a, 'b, 'c> ObjectSerializer<'a, 'b, 'c> {
   }
 }
 
+fn default_to_string(
+  scope: &mut v8::HandleScope,
+  _args: v8::FunctionCallbackArguments,
+  mut rv: v8::ReturnValue,
+) { 
+  let result = v8::String::new_from_utf8(scope, "[object]".as_bytes(), v8::NewStringType::Internalized).unwrap();
+  rv.set(result.into());
+}
+
 impl<'a, 'b, 'c> ser::SerializeStruct for ObjectSerializer<'a, 'b, 'c> {
   type Ok = JsValue<'a>;
   type Error = Error;
@@ -220,6 +230,11 @@ impl<'a, 'b, 'c> ser::SerializeStruct for ObjectSerializer<'a, 'b, 'c> {
       &self.keys[..],
       &self.values[..],
     );
+
+    let name = v8::String::new_from_utf8(scope, "toString".as_bytes(), v8::NewStringType::Internalized).unwrap();
+    let func = v8::Function::new(scope, default_to_string).unwrap();
+    let _ = obj.define_own_property(scope, name.into(), func.into(), PropertyAttribute::NONE);
+
     Ok(obj.into())
   }
 }
